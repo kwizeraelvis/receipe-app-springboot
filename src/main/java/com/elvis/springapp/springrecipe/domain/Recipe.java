@@ -25,7 +25,7 @@ public class Recipe {
     private Diffculty diffculty;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "recipe")
-    private Set<Ingridient> ingridients = new HashSet<>();
+    private Set<Ingridient> ingredients = new HashSet<>();
 
     @ManyToMany
     private Set<Category> categories = new HashSet<>();
@@ -44,7 +44,7 @@ public class Recipe {
 
     public Recipe addIngridient(Ingridient ingridient){
         ingridient.setRecipe(this);
-        this.ingridients.add(ingridient);
+        this.ingredients.add(ingridient);
         return this;
     }
 
