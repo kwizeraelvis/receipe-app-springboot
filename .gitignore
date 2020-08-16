@@ -32,3 +32,6 @@ build/
 
 ### Maven Wrapper ###
 .mvn
+
+### Project Build Folder ###
+/bin
