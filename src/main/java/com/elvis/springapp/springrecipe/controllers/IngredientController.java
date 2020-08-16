@@ -12,6 +12,8 @@ import com.elvis.springapp.springrecipe.Service.IngredientService;
 import com.elvis.springapp.springrecipe.Service.RecipeService;
 import com.elvis.springapp.springrecipe.Service.UnitOfMeasureService;
 import com.elvis.springapp.springrecipe.commands.IngridientCommand;
+import com.elvis.springapp.springrecipe.commands.RecipeCommand;
+import com.elvis.springapp.springrecipe.commands.UnitOfMeasureCommand;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -53,6 +55,18 @@ public class IngredientController {
 		model.addAttribute("uomList", unitOfMeasureService.listAllUoMs());
 		return "recipe/ingredient/ingredientform";
 	}
+	
+	@GetMapping
+	@RequestMapping("/recipe/{recipeId}/ingredient/new")
+	public String newIngredient(@PathVariable String recipeId, Model model) {
+		RecipeCommand recipeCommand = recipeService.findCommandById(Long.valueOf(recipeId));
+		IngridientCommand ingridientCommand = new IngridientCommand();
+		ingridientCommand.setRecipeId(recipeCommand.getId());
+		model.addAttribute("ingredient", ingridientCommand);
+		ingridientCommand.setUom(new UnitOfMeasureCommand());
+		model.addAttribute("uomList", unitOfMeasureService.listAllUoMs());
+		return "recipe/ingredient/ingredientform";
+ 	}
 
 	@PostMapping
 	@RequestMapping("/recipe/{recipeId}/ingredient")
