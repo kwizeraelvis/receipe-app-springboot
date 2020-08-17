@@ -16,18 +16,16 @@ import com.elvis.springapp.springrecipe.repositories.UnitOfMeasureRepository;
 
 import lombok.extern.slf4j.Slf4j;
 
-
 @Service
 @Slf4j
-public class IngredientServiceImpl implements IngredientService{
-	
+public class IngredientServiceImpl implements IngredientService {
+
 	private final RecipeRepository recipeRepository;
 	private final UnitOfMeasureRepository unitOfMeasureRepository;
 	private final IngredientToIngredientCommand converter;
 	private final IngredientCommandToIngredient ingredientCommandToIngredient;
-	
-	public IngredientServiceImpl(RecipeRepository recipeRepository,
-			IngredientToIngredientCommand converter,
+
+	public IngredientServiceImpl(RecipeRepository recipeRepository, IngredientToIngredientCommand converter,
 			UnitOfMeasureRepository unitOfMeasureRepository,
 			IngredientCommandToIngredient ingredientCommandToIngredient) {
 		this.recipeRepository = recipeRepository;
@@ -35,18 +33,18 @@ public class IngredientServiceImpl implements IngredientService{
 		this.converter = converter;
 		this.ingredientCommandToIngredient = ingredientCommandToIngredient;
 	}
-	
+
 	@Override
 	public IngridientCommand findByRecipeIdAndIngredientId(Long recipeId, Long ingredientId) {
 		Optional<Recipe> recipOptional = recipeRepository.findById(recipeId);
-		if(!recipOptional.isPresent()) {
+		if (!recipOptional.isPresent()) {
 			log.error("No recipe available with id : {}", recipeId);
 		}
 		Recipe savedRecipe = recipOptional.get();
 		Optional<IngridientCommand> ingridientCommandOptional = savedRecipe.getIngredients().stream()
 				.filter(ingredient -> ingredient.getId().equals(ingredientId))
 				.map(ingredient -> converter.convert(ingredient)).findFirst();
-		if(!ingridientCommandOptional.isPresent()) {
+		if (!ingridientCommandOptional.isPresent()) {
 			log.error("No ingredient exists with id : {}", ingredientId);
 		}
 		return ingridientCommandOptional.get();
@@ -56,32 +54,44 @@ public class IngredientServiceImpl implements IngredientService{
 	@Transactional
 	public IngridientCommand saveIngridientCommand(IngridientCommand command) {
 		Optional<Recipe> recipeOptional = recipeRepository.findById(command.getRecipeId());
-		if(!recipeOptional.isPresent()) {
-			log.error("No recipe with id {}",command.getId());
+		if (!recipeOptional.isPresent()) {
+			log.error("No recipe with id {}", command.getId());
 			return new IngridientCommand();
-		}else {
+		} else {
 			Recipe recipe = recipeOptional.get();
-			Optional<Ingridient> ingredientOptional = recipe
-					.getIngredients()
-					.stream()
-					.filter(ingredient -> ingredient.getId().equals(command.getId()))
-					.findFirst();
+			Optional<Ingridient> ingredientOptional = recipe.getIngredients().stream()
+					.filter(ingredient -> ingredient.getId().equals(command.getId())).findFirst();
 			if (ingredientOptional.isPresent()) {
 				Ingridient foundIngridient = ingredientOptional.get();
 				foundIngridient.setDescription(command.getDescription());
-				foundIngridient.setUom(unitOfMeasureRepository
-						.findById(command.getUom().getId())
+				foundIngridient.setUom(unitOfMeasureRepository.findById(command.getUom().getId())
 						.orElseThrow(() -> new RuntimeException("NOT FOUND")));
-			}else {
+			} else {
 				recipe.addIngridient(ingredientCommandToIngredient.convert(command));
 			}
 			Recipe savedRecipe = recipeRepository.save(recipe);
-			return converter.convert(savedRecipe
-					.getIngredients()
+			return converter.convert(savedRecipe.getIngredients().stream()
+					.filter(recipeIngredients -> recipeIngredients.getId().equals(command.getId())).findFirst().get());
+		}
+	}
+
+	@Override
+	public void deleteIngredientById(Long recipeId, Long ingredientId) {
+		Optional<Recipe> recipeOptional = recipeRepository.findById(recipeId);
+		if(recipeOptional.isPresent()) {
+			Recipe recipe = recipeOptional.get();
+			Optional<Ingridient> ingredientOptional = recipe.getIngredients()
 					.stream()
-					.filter(recipeIngredients -> recipeIngredients.getId().equals(command.getId()))
-					.findFirst()
-					.get());
+					.filter(ingredient -> ingredient.getId().equals(ingredientId))
+					.findFirst();
+			if(ingredientOptional.isPresent()) {
+				Ingridient ingredientTODelete = ingredientOptional.get();
+				ingredientTODelete.setRecipe(null);
+				recipe.getIngredients().remove(ingredientOptional.get());
+				recipeRepository.save(recipe);
+			}
+		}else {
+			log.error("No recipe with Id : {}", recipeId);
 		}
 	}
 
